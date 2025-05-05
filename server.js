@@ -5,70 +5,76 @@ const bodyParser = require('body-parser');
 const app = express();
 app.use(bodyParser.json());
 
-// Конфигурация GreenAPI
+// Конфигурация
 const GREEN_API_URL = 'https://api.green-api.com';
 const ID_INSTANCE = process.env.ID_INSTANCE;
 const API_TOKEN = process.env.API_TOKEN_IN;
 const PORT = process.env.PORT || 3000;
 
-// Проверка переменных окружения
-if (!ID_INSTANCE || !API_TOKEN) {
-  console.error('ERROR: Missing GreenAPI credentials');
-  process.exit(1);
-}
-
-// Обработчик вебхука
+// Обработчик всех вебхуков
 app.post('/webhook', async (req, res) => {
   try {
-    console.log('Received webhook:', JSON.stringify(req.body, null, 2));
+    console.log('Received webhook type:', req.body.typeWebhook);
 
-    // Проверка структуры входящих данных
-    if (!req.body || !req.body.senderData || !req.body.messageData) {
-      console.error('Invalid webhook structure');
-      return res.status(400).json({ error: 'Invalid request structure' });
+    // Обработка статусов инстанса
+    if (req.body.typeWebhook === 'stateInstanceChanged') {
+      console.log('Instance state:', req.body.stateInstance);
+      return res.status(200).send('State received');
     }
 
-    const { chatId } = req.body.senderData;
-    const text = req.body.messageData.textMessageData?.textMessage || '';
+    // Обработка входящих сообщений
+    if (req.body.typeWebhook === 'incomingMessageReceived') {
+      const chatId = req.body.senderData?.chatId;
+      const text = req.body.messageData?.textMessageData?.textMessage || '';
 
-    console.log(`Message from ${chatId}: ${text}`);
+      if (!chatId) {
+        throw new Error('Missing chatId in webhook');
+      }
 
-    // Обработка оценки
-    const rating = parseInt(text);
-    if (!isNaN(rating) && rating >= 1 && rating <= 5) {
-      const response = rating >= 4 
-        ? 'Спасибо за высокую оценку! Оставьте отзыв: [ссылка]'
-        : 'Спасибо за обратную связь!';
-      
-      await sendMessage(chatId, response);
+      console.log(`Message from ${chatId}: "${text}"`);
+
+      // Обработка оценки 1-5
+      const rating = parseInt(text);
+      if (!isNaN(rating) && rating >= 1 && rating <= 5) {
+        const response = rating >= 4 
+          ? 'Спасибо за высокую оценку! Оставьте отзыв: [ссылка]' 
+          : 'Спасибо за обратную связь!';
+        
+        await sendMessage(chatId, response);
+      }
+
+      return res.status(200).send('OK');
     }
 
-    res.status(200).json({ status: 'OK' });
+    // Неизвестный тип вебхука
+    console.warn('Unknown webhook type:', req.body.typeWebhook);
+    res.status(200).send('Ignored');
+
   } catch (error) {
     console.error('Webhook error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).send('Internal error');
   }
 });
 
-// Проверка работоспособности
+// Проверка здоровья
 app.get('/health', (req, res) => {
-  res.status(200).send('Server is healthy');
+  res.send('Server is healthy');
 });
 
-// Функция отправки сообщения
+// Отправка сообщения
 async function sendMessage(chatId, text) {
   try {
     const response = await axios.post(
       `${GREEN_API_URL}/waInstance${ID_INSTANCE}/SendMessage/${API_TOKEN}`,
       { chatId, message: text }
     );
-    console.log('Message sent:', response.data);
+    console.log('Message sent to', chatId);
   } catch (error) {
-    console.error('Send message error:', error.response?.data || error.message);
+    console.error('Send error:', error.response?.data || error.message);
   }
 }
 
 // Запуск сервера
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`Server started on port ${PORT}`);
 });
