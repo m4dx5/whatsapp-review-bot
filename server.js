@@ -5,6 +5,11 @@ const bodyParser = require('body-parser');
 const app = express();
 app.use(bodyParser.json());
 
+// В начале файла добавьте:
+console.log('Проверка переменных окружения:');
+console.log('ID_INSTANCE:', process.env.ID_INSTANCE);
+console.log('API_TOKEN_IN:', process.env.API_TOKEN_IN ? 'установлен' : 'отсутствует');
+
 // Конфигурация (берётся из переменных окружения Render)
 const GREEN_API_URL = 'https://api.green-api.com';
 const ID_INSTANCE = process.env.ID_INSTANCE;
@@ -59,6 +64,14 @@ async function sendMessage(chatId, text) {
   } catch (err) {
     console.error('[SEND ERROR]', err.response?.data || err.message);
   }
+}
+
+// В проверке credentials:
+if (!process.env.ID_INSTANCE || !process.env.API_TOKEN_IN) {
+  console.error('ОШИБКА: Проверьте переменные окружения:');
+  console.error('- ID_INSTANCE:', process.env.ID_INSTANCE);
+  console.error('- API_TOKEN_IN:', process.env.API_TOKEN_IN);
+  process.exit(1);
 }
 
 // Запуск сервера
