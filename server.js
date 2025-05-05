@@ -1,15 +1,11 @@
-require('dotenv').config(); // Для локального тестирования
 const express = require('express');
 const axios = require('axios');
 const bodyParser = require('body-parser');
 
 const app = express();
-
-// Middleware
 app.use(bodyParser.json());
-app.use(express.urlencoded({ extended: true }));
 
-// Конфигурация GreenAPI
+// Конфигурация (берётся из переменных окружения Render)
 const GREEN_API_URL = 'https://api.green-api.com';
 const ID_INSTANCE = process.env.ID_INSTANCE;
 const API_TOKEN = process.env.API_TOKEN_IN;
@@ -30,7 +26,7 @@ app.post('/webhook', async (req, res) => {
 
     console.log(`[WEBHOOK] Сообщение от ${chatId}: "${text}"`);
 
-    // Обработка оценки
+    // Обработка оценки (1-5)
     const rating = parseInt(text);
     if (!isNaN(rating) && rating >= 1 && rating <= 5) {
       const response = rating >= 4 
@@ -65,9 +61,8 @@ async function sendMessage(chatId, text) {
   }
 }
 
-// Явное указание хоста 0.0.0.0 для Render
+// Запуск сервера
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`✅ Сервер запущен на порту ${PORT}`);
   console.log(`🟢 GreenAPI ID: ${ID_INSTANCE}`);
-  console.log(`🔗 Webhook URL: https://ваш-сервис.onrender.com/webhook`);
 });
