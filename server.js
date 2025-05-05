@@ -1,12 +1,3 @@
-// Добавьте в начало обработчика
-if (req.body.senderData?.chatId.endsWith('@g.us')) {
-  return res.status(200).send('Ignoring group chat');
-}
-// В начале обработчика
-const authToken = req.headers['authorization'];
-if (authToken !== `Bearer ${API_TOKEN}`) {
-  return res.status(403).send('Forbidden');
-}
 app.post('/webhook', async (req, res) => {
   try {
     console.log('Raw webhook:', JSON.stringify(req.body, null, 2));
