@@ -1,4 +1,4 @@
-require('dotenv').config(); // Для локального тестирования
+require('dotenv').config(); // Для локальной разработки
 const express = require('express');
 const axios = require('axios');
 const bodyParser = require('body-parser');
@@ -7,18 +7,20 @@ const bodyParser = require('body-parser');
 const app = express();
 app.use(bodyParser.json());
 
-// Конфигурация GreenAPI
+// Конфигурация из переменных окружения
 const GREEN_API_URL = 'https://api.green-api.com';
-const ID_INSTANCE = process.env.1103273017;
-const API_TOKEN = process.env.4e2ed8934968498898d89138e8d6b3f1b45794bdb0ed457e83;
+const ID_INSTANCE = process.env.ID_INSTANCE; // Только из переменных окружения
+const API_TOKEN = process.env.API_TOKEN_IN;   // Только из переменных окружения
 const PORT = process.env.PORT || 3000;
 
 // Проверка конфигурации
 if (!ID_INSTANCE || !API_TOKEN) {
   console.error('❌ Ошибка: Не заданы обязательные переменные окружения');
-  console.error('Проверьте наличие в Render:');
-  console.error('1. ID_INSTANCE');
-  console.error('2. API_TOKEN_IN');
+  console.error('Для Render проверьте:');
+  console.error('1. Настройки -> Environment');
+  console.error('2. Добавьте переменные:');
+  console.error('   - ID_INSTANCE');
+  console.error('   - API_TOKEN_IN');
   process.exit(1);
 }
 
@@ -27,7 +29,7 @@ console.log('ID_INSTANCE:', ID_INSTANCE);
 console.log('API_TOKEN:', '***' + API_TOKEN.slice(-4));
 console.log('PORT:', PORT);
 
-// Обработчик входящих сообщений
+// Обработчик вебхуков
 app.post('/webhook', async (req, res) => {
   try {
     console.log('\n📩 Получен вебхук:', JSON.stringify(req.body, null, 2));
@@ -69,7 +71,7 @@ app.post('/webhook', async (req, res) => {
       } 
       // Ответ для оценок 4-5
       else {
-        responseMessage = `🔧 Добрый день! Благодарим вас за доверие и визит в наш шинный центр. Нам очень важно знать, насколько вам понравился сервис!\n\nПожалуйста, оставьте отзыв о нашей работе:\n👉 Яндекс: https://goo.su/EpDmq\n👉 2ГИС: https://goo.su/Ur3h\n\nС заботой,\n📞 Контакт для связи: +7(992)555-57-70`;
+        responseMessage = `🔧 Добрый день! Благодарим вас за доверие и визит в наш шинный центр.\n\nПожалуйста, оставьте отзыв:\n👉 Яндекс: https://example.com/yandex\n👉 2ГИС: https://example.com/2gis\n\n📞 Контакт: +7(XXX)XXX-XX-XX`;
       }
       
       // Отправка ответа
@@ -78,18 +80,18 @@ app.post('/webhook', async (req, res) => {
 
     res.status(200).json({ status: 'processed' });
   } catch (error) {
-    console.error('🔥 Ошибка обработки вебхука:', error);
+    console.error('🔥 Ошибка обработки:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-// Проверка работоспособности
+// Проверка здоровья
 app.get('/health', (req, res) => {
   res.status(200).json({ 
-    status: 'healthy',
+    status: 'ok',
     service: 'WhatsApp Review Bot',
-    version: '1.0.1',
-    timestamp: new Date().toISOString()
+    version: '1.0.2',
+    time: new Date().toISOString()
   });
 });
 
@@ -104,22 +106,21 @@ async function sendWhatsAppMessage(chatId, message) {
       },
       {
         headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
+          'Content-Type': 'application/json'
         },
-        timeout: 5000 // Таймаут 5 секунд
+        timeout: 10000 // 10 секунд таймаут
       }
     );
     
     console.log('📤 Сообщение отправлено:', {
       to: chatId,
-      messageId: response.data.idMessage,
-      timestamp: new Date().toISOString()
+      id: response.data.idMessage,
+      time: new Date().toISOString()
     });
     
     return response.data;
   } catch (error) {
-    console.error('💥 Ошибка отправки сообщения:', {
+    console.error('💥 Ошибка отправки:', {
       error: error.response?.data || error.message,
       stack: error.stack
     });
@@ -128,15 +129,13 @@ async function sendWhatsAppMessage(chatId, message) {
 }
 
 // Обработка ошибок
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('⚠️ Необработанное исключение:', reason);
+process.on('unhandledRejection', (error) => {
+  console.error('⚠️ Необработанная ошибка:', error);
 });
 
 // Запуск сервера
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`\n🚀 WhatsApp Review Bot запущен`);
-  console.log(`🔗 URL вебхука: https://ваш-сервис.onrender.com/webhook`);
-  console.log(`🔄 Порт: ${PORT}`);
-  console.log(`📞 ID инстанса: ${ID_INSTANCE}`);
-  console.log(`⏱️ ${new Date().toLocaleString()}`);
+  console.log(`\n🚀 Сервер запущен на порту ${PORT}`);
+  console.log(`🔄 Режим: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`⏱️ Время запуска: ${new Date().toLocaleString()}`);
 });
