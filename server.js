@@ -8,8 +8,8 @@ app.use(bodyParser.json());
 
 // Конфигурация GreenAPI
 const GREEN_API_URL = 'https://api.green-api.com';
-const ID_INSTANCE = process.env.ID_INSTANCE || '1103220109'; // Ваш ID из GreenAPI
-const API_TOKEN = process.env.API_TOKEN_IN || 'ваш_api_токен'; // Ваш API токен
+const ID_INSTANCE = process.env.ID_INSTANCE || '1103273017'; // Ваш ID из GreenAPI
+const API_TOKEN = process.env.API_TOKEN_IN || '4e2ed8934968498898d89138e8d6b3f1b45794bdb0ed457e83'; // Ваш API токен
 const PORT = process.env.PORT || 3000;
 
 // Проверка конфигурации
